@@ -3,6 +3,9 @@ import { createRoot } from 'react-dom/client'
 import { BrowserRouter, Routes, Route, Link, useNavigate, useParams } from 'react-router-dom'
 import './style.css'
 
+const API_BASE = import.meta.env.VITE_API_URL || ''
+const api = (path) => `${API_BASE}${path}`
+
 function useAuth() {
   const [token, setToken] = React.useState(localStorage.getItem('token') || '')
   const [user, setUser] = React.useState(JSON.parse(localStorage.getItem('user') || 'null'))
@@ -52,7 +55,7 @@ function Login({ auth }) {
   const [password, setPassword] = React.useState('learner123')
   const onSubmit = async (e) => {
     e.preventDefault()
-    const r = await fetch('/api/auth/login', { method:'POST', headers:{ 'Content-Type':'application/json' }, body: JSON.stringify({ email, password }) })
+    const r = await fetch(api('/api/auth/login'), { method:'POST', headers:{ 'Content-Type':'application/json' }, body: JSON.stringify({ email, password }) })
     const d = await r.json(); if (r.ok) { auth.login(d); nav('/courses') } else { alert(JSON.stringify(d)) }
   }
   return (
@@ -67,7 +70,7 @@ function Login({ auth }) {
 
 function Courses() {
   const [data, setData] = React.useState({ items: [] })
-  React.useEffect(()=>{ (async()=>{ const r = await fetch('/api/courses'); setData(await r.json()) })() },[])
+  React.useEffect(()=>{ (async()=>{ const r = await fetch(api('/api/courses')); setData(await r.json()) })() },[])
   return (
     <div style={{ padding:20 }}>
       <h2>Courses</h2>
@@ -84,7 +87,7 @@ function CourseDetail({ auth }) {
   React.useEffect(()=>{ (async()=>{ const r = await fetch(`/api/courses/${id}`); setD(await r.json()) })() },[id])
   if (!d) return null
   const enroll = async ()=>{
-    const r = await fetch('/api/learn/enroll', { method:'POST', headers:{ 'Content-Type':'application/json', 'Authorization': `Bearer ${auth.token}` }, body: JSON.stringify({ course_id: d.course.id })}); const j = await r.json(); if(!r.ok) alert(JSON.stringify(j))
+    const r = await fetch(api('/api/learn/enroll'), { method:'POST', headers:{ 'Content-Type':'application/json', 'Authorization': `Bearer ${auth.token}` }, body: JSON.stringify({ course_id: d.course.id })}); const j = await r.json(); if(!r.ok) alert(JSON.stringify(j))
   }
   return (
     <div style={{ padding:20 }}>
@@ -102,10 +105,10 @@ function CourseDetail({ auth }) {
 function LearnLesson({ auth }) {
   const { lessonId } = useParams()
   const [l, setL] = React.useState(null)
-  React.useEffect(()=>{ (async()=>{ const r = await fetch(`/api/lesson/${lessonId}`); setL(await r.json()) })() },[lessonId])
+  React.useEffect(()=>{ (async()=>{ const r = await fetch(api(`/api/lesson/${lessonId}`)); setL(await r.json()) })() },[lessonId])
   if (!l) return null
   const complete = async ()=>{
-    const r = await fetch('/api/learn/complete', { method:'POST', headers:{ 'Content-Type':'application/json', 'Authorization': `Bearer ${auth.token}` }, body: JSON.stringify({ lesson_id: Number(lessonId) })}); const j = await r.json(); if(!r.ok) alert(JSON.stringify(j))
+    const r = await fetch(api('/api/learn/complete'), { method:'POST', headers:{ 'Content-Type':'application/json', 'Authorization': `Bearer ${auth.token}` }, body: JSON.stringify({ lesson_id: Number(lessonId) })}); const j = await r.json(); if(!r.ok) alert(JSON.stringify(j))
   }
   return (
     <div style={{ padding:20 }}>
@@ -120,21 +123,21 @@ function LearnLesson({ auth }) {
 function Progress({ auth }) {
   const [courseId, setCourseId] = React.useState('1')
   const [p, setP] = React.useState(null)
-  const fetchP = async ()=>{ const r = await fetch(`/api/learn/progress/${courseId}`, { headers: { 'Authorization': `Bearer ${auth.token}` } }); setP(await r.json()) }
+  const fetchP = async ()=>{ const r = await fetch(api(`/api/learn/progress/${courseId}`), { headers: { 'Authorization': `Bearer ${auth.token}` } }); setP(await r.json()) }
   return (
     <div style={{ padding:20 }}>
       <h2>My Progress</h2>
       <input value={courseId} onChange={e=>setCourseId(e.target.value)} placeholder="Course ID" />
       <button onClick={fetchP}>Fetch</button>
       {p && <p>{p.completed_lessons}/{p.total_lessons} ({p.percent}%)</p>}
-      <button onClick={async()=>{ const r = await fetch('/api/learn/certificate', { method:'POST', headers:{ 'Content-Type':'application/json', 'Authorization': `Bearer ${auth.token}` }, body: JSON.stringify({ course_id: Number(courseId) })}); const j = await r.json(); if(r.ok) alert(`Issued: ${j.certificate.serial_hash}`); else alert(JSON.stringify(j)) }}>Issue Certificate</button>
+      <button onClick={async()=>{ const r = await fetch(api('/api/learn/certificate'), { method:'POST', headers:{ 'Content-Type':'application/json', 'Authorization': `Bearer ${auth.token}` }, body: JSON.stringify({ course_id: Number(courseId) })}); const j = await r.json(); if(r.ok) alert(`Issued: ${j.certificate.serial_hash}`); else alert(JSON.stringify(j)) }}>Issue Certificate</button>
     </div>
   )
 }
 
 function CreatorApply({ auth }) {
   const submit = async ()=>{
-    const r = await fetch('/api/creator/apply', { method:'POST', headers:{ 'Content-Type':'application/json', 'Authorization': `Bearer ${auth.token}` }, body: JSON.stringify({ bio: 'Experienced teacher' })}); const j = await r.json(); if(!r.ok) alert(JSON.stringify(j))
+    const r = await fetch(api('/api/creator/apply'), { method:'POST', headers:{ 'Content-Type':'application/json', 'Authorization': `Bearer ${auth.token}` }, body: JSON.stringify({ bio: 'Experienced teacher' })}); const j = await r.json(); if(!r.ok) alert(JSON.stringify(j))
   }
   return (
     <div style={{ padding:20 }}>
@@ -149,11 +152,11 @@ function CreatorDashboard({ auth }) {
   const [desc, setDesc] = React.useState('About this course')
   const [cid, setCid] = React.useState(null)
   const [items, setItems] = React.useState([])
-  const reload = async ()=>{ const r = await fetch('/api/creator/dashboard', { headers:{ 'Authorization': `Bearer ${auth.token}` }}); const j = await r.json(); setItems(j.items || []) }
+  const reload = async ()=>{ const r = await fetch(api('/api/creator/dashboard'), { headers:{ 'Authorization': `Bearer ${auth.token}` }}); const j = await r.json(); setItems(j.items || []) }
   React.useEffect(()=>{ reload() },[])
-  const create = async ()=>{ const r = await fetch('/api/courses', { method:'POST', headers:{ 'Content-Type':'application/json', 'Authorization': `Bearer ${auth.token}` }, body: JSON.stringify({ title, description: desc })}); const j = await r.json(); if(r.ok) { setCid(j.id); reload() } else alert(JSON.stringify(j)) }
-  const addLesson = async ()=>{ const r = await fetch(`/api/courses/${cid}/lessons`, { method:'POST', headers:{ 'Content-Type':'application/json', 'Authorization': `Bearer ${auth.token}` }, body: JSON.stringify({ title:'Lesson', content:'Auto transcript content. This illustrates keywords.', order_index: 1 })}); if(r.ok) reload(); else alert(await r.text()) }
-  const submit = async ()=>{ const r = await fetch(`/api/courses/${cid}/submit`, { method:'POST', headers:{ 'Authorization': `Bearer ${auth.token}` }}); if(r.ok) reload(); else alert(await r.text()) }
+  const create = async ()=>{ const r = await fetch(api('/api/courses'), { method:'POST', headers:{ 'Content-Type':'application/json', 'Authorization': `Bearer ${auth.token}` }, body: JSON.stringify({ title, description: desc })}); const j = await r.json(); if(r.ok) { setCid(j.id); reload() } else alert(JSON.stringify(j)) }
+  const addLesson = async ()=>{ const r = await fetch(api(`/api/courses/${cid}/lessons`), { method:'POST', headers:{ 'Content-Type':'application/json', 'Authorization': `Bearer ${auth.token}` }, body: JSON.stringify({ title:'Lesson', content:'Auto transcript content. This illustrates keywords.', order_index: 1 })}); if(r.ok) reload(); else alert(await r.text()) }
+  const submit = async ()=>{ const r = await fetch(api(`/api/courses/${cid}/submit`), { method:'POST', headers:{ 'Authorization': `Bearer ${auth.token}` }}); if(r.ok) reload(); else alert(await r.text()) }
   return (
     <div style={{ padding:20 }}>
       <h2>Creator Dashboard</h2>
@@ -178,12 +181,12 @@ function AdminReview({ auth }) {
   const [courses, setCourses] = React.useState([])
   const [apps, setApps] = React.useState([])
   const reload = async ()=>{
-    const r1 = await fetch('/api/admin/review/courses', { headers:{ 'Authorization': `Bearer ${auth.token}` }}); setCourses((await r1.json()).items || [])
-    const r2 = await fetch('/api/admin/review/creators', { headers:{ 'Authorization': `Bearer ${auth.token}` }}); setApps((await r2.json()).items || [])
+    const r1 = await fetch(api('/api/admin/review/courses'), { headers:{ 'Authorization': `Bearer ${auth.token}` }}); setCourses((await r1.json()).items || [])
+    const r2 = await fetch(api('/api/admin/review/creators'), { headers:{ 'Authorization': `Bearer ${auth.token}` }}); setApps((await r2.json()).items || [])
   }
   React.useEffect(()=>{ reload() },[])
-  const approveCourse = async (id)=>{ const r = await fetch(`/api/admin/review/courses/${id}/approve`, { method:'POST', headers:{ 'Authorization': `Bearer ${auth.token}` }}); if(r.ok) reload(); else alert(await r.text()) }
-  const approveCreator = async (id)=>{ const r = await fetch(`/api/admin/review/creators/${id}/approve`, { method:'POST', headers:{ 'Authorization': `Bearer ${auth.token}` }}); if(r.ok) reload(); else alert(await r.text()) }
+  const approveCourse = async (id)=>{ const r = await fetch(api(`/api/admin/review/courses/${id}/approve`), { method:'POST', headers:{ 'Authorization': `Bearer ${auth.token}` }}); if(r.ok) reload(); else alert(await r.text()) }
+  const approveCreator = async (id)=>{ const r = await fetch(api(`/api/admin/review/creators/${id}/approve`), { method:'POST', headers:{ 'Authorization': `Bearer ${auth.token}` }}); if(r.ok) reload(); else alert(await r.text()) }
   return (
     <div style={{ padding:20 }}>
       <h2>Admin Review</h2>

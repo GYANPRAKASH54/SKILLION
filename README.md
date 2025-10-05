@@ -108,3 +108,19 @@ cd server && npm run seed && npm run dev
 # Terminal 2
 cd client && npm run dev
 ```
+
+### Deploy (Render + Static client)
+
+1) Create a new repo or use existing (this repo already works)
+2) Push your code (already on `main`)
+3) In Render Dashboard → New → Blueprint → point to this repo
+4) Render will detect `render.yaml` and create:
+   - Web service `microcourses-api` (Node) with a persistent disk for SQLite
+   - Static site `microcourses-client` built with Vite
+5) After deploy finishes:
+   - API base URL is available as `RENDER_EXTERNAL_URL` and injected to client via `VITE_API_URL`
+   - Visit the Static Site URL to use the app
+
+Alternative hosting
+- API on Railway/Render/Fly.io; set env vars: `JWT_SECRET`, `DB_PATH` (point to a persistent disk path)
+- Client on Netlify/Vercel; set build env var `VITE_API_URL` to your API URL

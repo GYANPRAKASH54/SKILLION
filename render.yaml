@@ -1,0 +1,32 @@
+services:
+  - type: web
+    name: microcourses-api
+    env: node
+    plan: free
+    region: oregon
+    rootDir: server
+    buildCommand: npm install
+    startCommand: node src/index.js
+    envVars:
+      - key: NODE_ENV
+        value: production
+      - key: JWT_SECRET
+        generateValue: true
+      - key: DB_PATH
+        value: /var/data/app.db
+    disk:
+      name: data
+      mountPath: /var/data
+      sizeGB: 1
+
+  - type: static
+    name: microcourses-client
+    rootDir: client
+    buildCommand: npm install && npm run build
+    staticPublishPath: dist
+    envVars:
+      - key: VITE_API_URL
+        fromService:
+          name: microcourses-api
+          type: web
+          envVarKey: RENDER_EXTERNAL_URL
